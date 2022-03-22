@@ -1,4 +1,4 @@
- package ch.luca.hydroslide.buildffa;
+package ch.luca.hydroslide.buildffa;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,216 +46,177 @@ import ch.luca.hydroslide.buildffa.commands.Stats;
 import ch.luca.hydroslide.buildffa.commands.Teleport;
 import ch.luca.hydroslide.buildffa.commands.Vanish;
 
- public class BuildFFA extends JavaPlugin {
+@Getter
+public class BuildFFA extends JavaPlugin {
 
-	//INSTANCE
-	@Getter
-	private static BuildFFA instance;
+    @Getter
+    private static BuildFFA instance;
 
-	//CHAT PREFIX
-	@Getter
-	private static String prefix = "§5BuildFFA §a✧ §7";
+    @Getter
+    private BasicDataSource sqlPool;
+    @Getter
+    private BuildFFADatabase buildFFADatabase;
+    @Getter
+    private UserManager userManager;
+    @Getter
+    private TitleAPI titleAPI;
+    @Getter
+    private ItemManager itemManager;
+    @Getter
+    private Scoreboard scoreboard;
+    @Getter
+    @Setter
+    private Location spawnLocation;
 
-	@Getter
-	private static String use = "§5BuildFFA §a✧ §cBenutze: §e";
+    @Getter
+    @Setter
+    private int fightHeight = 0, deathHeight = 0;
+    @Getter
+    private final List<Player> allowBuild = new ArrayList<>();
+    @Getter
+    private final Map<Location, Long> blockDestroy = new HashMap<>();
 
-	@Getter
-	private static String notPlayer = "§5BuildFFA §a✧ §cDu bist leider kein Spieler.";
+    private final String prefix = "§5BuildFFA §8» §7";
+    private final String prefixUse = "§5BuildFFA §8» §cBenutze: §e/";
+    private final String noPlayer = "§5BuildFFA §8» §cBenutze diesen Befehl bitte im Spiel.";
+    private final String playerNotOnline = "§5BuildFFA §8» §cDieser Spieler ist nicht online.";
+    private final String playerNeverOnline = "§5BuildFFA §8» §cDieser Spieler wurde in der Datenbank nicht gefunden.";
+    private final String noPermission = "§5BuildFFA §8» §cFür diesen Befehl fehlt dir die Berechtigung.";
 
-	@Getter
-	private static String notOnline = "§5BuildFFA §a✧ §cDer angegebene Spieler ist momentan nicht online.";
+    @Override
+    public void onEnable() {
+        instance = this;
+        try {
+            if (!getDataFolder().exists()) {
+                getDataFolder().mkdir();
+            }
+            File configFile = new File(getDataFolder().getPath(), "config.yml");
+            if (!configFile.exists()) {
+                configFile.createNewFile();
+                YamlConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
+                cfg.set("MySQL.Host", "host");
+                cfg.set("MySQL.Database", "db");
+                cfg.set("MySQL.Password", "pw");
+                cfg.set("MySQL.User", "user");
+                cfg.set("MySQL.Port", 3306);
+                cfg.save(configFile);
+            } else {
+                YamlConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
+                if (cfg.get("Spawn") != null) {
+                    this.spawnLocation = LocationUtil.stringToLocation(cfg.getString("Spawn"));
+                }
+                if (cfg.get("FightHeight") != null) {
+                    this.fightHeight = cfg.getInt("FightHeight");
+                }
+                if (cfg.get("DeathHeight") != null) {
+                    this.deathHeight = cfg.getInt("DeathHeight");
+                }
+                try {
+                    sqlPool = new BasicDataSource();
+                    sqlPool.setDriverClassName("com.mysql.jdbc.Driver");
+                    sqlPool.setUrl("jdbc:mysql://" + cfg.getString("MySQL.Host") + ":" + cfg.getInt("MySQL.Port") + "/" + cfg.getString("MySQL.Database"));
+                    sqlPool.setUsername(cfg.getString("MySQL.User"));
+                    sqlPool.setPassword(cfg.getString("MySQL.Password"));
+                    sqlPool.setMaxIdle(30);
+                    sqlPool.setMinIdle(5);
+                    sqlPool.setDriverClassLoader(BuildFFA.class.getClassLoader());
+                    System.out.println("[BuildFFA] MySQL connected!");
+                    Connection connection = null;
+                    try {
+                        connection = sqlPool.getConnection();
+                        PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS BuildFFA (uuid VARCHAR(100), name VARCHAR(100), kills INT(100), deaths INT(100), coins INT(100), inventory LONGTEXT, PRIMARY KEY(uuid))");
+                        preparedStatement.executeUpdate();
+                        preparedStatement.close();
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    } finally {
+                        try {
+                            if (connection != null) {
+                                connection.close();
+                            }
+                        } catch (Exception exc) {
+                            exc.printStackTrace();
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        this.titleAPI = new TitleAPI();
+        this.buildFFADatabase = new BuildFFADatabase();
+        this.userManager = new UserManager();
+        this.itemManager = new ItemManager();
 
-	@Getter
-	private static String neverOnline = "§3§lCube§bSlide §a✧ §cDer angegebene Spieler war noch nie auf CubeSlide.";
+        PluginManager pluginManager = Bukkit.getPluginManager();
+        getCommand("build").setExecutor(new Build(this));
+        getCommand("setup").setExecutor(new Setup(this));
+        getCommand("inventory").setExecutor(new Inventory(this));
+        getCommand("ranking").setExecutor(new Ranking(this));
+        getCommand("stats").setExecutor(new Stats(this));
+        getCommand("vanish").setExecutor(new Vanish(this));
+        getCommand("teleport").setExecutor(new Teleport(this));
+        getCommand("gamemode").setExecutor(new Gamemode(this));
+        pluginManager.registerEvents(new Vanish(this), this);
 
-	@Getter
-	private static String noPerms = "§5BuildFFA §a✧ §cDazu fehlen dir die nötigen Rechte.";
+        this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
 
-	@Getter
-	private static String header = "§8§l§m*-*-*-*-*-*-*-*§3§l Cube§bSlide §8§l§m*-*-*-*-*-*-*-*";
-	@Getter
-	private static String footer = "§8§l§m*-*-*-*-*-*-*§b§l§m-*-*-*-*-*-*-§8§l§m*-*-*-*-*-*-*";
+        try {
+            for (ClassPath.ClassInfo classInfo : ClassPath.from(getClassLoader()).getTopLevelClasses("ch.luca.hydroslide.buildffa.listener")) {
+                @SuppressWarnings("rawtypes")
+                Class clazz = Class.forName(classInfo.getName());
+                if (Listener.class.isAssignableFrom(clazz)) {
+                    pluginManager.registerEvents((Listener) clazz.newInstance(), this);
+                }
+            }
+        } catch (IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
+            e.printStackTrace();
+        }
+        Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
+            long current = System.currentTimeMillis();
+            Iterator<Entry<Location, Long>> iterator = this.blockDestroy.entrySet().iterator();
+            while (iterator.hasNext()) {
+                Entry<Location, Long> entry = iterator.next();
+                Location loc = entry.getKey();
+                long time = entry.getValue();
+                if (loc.getBlock().getType().equals(Material.SANDSTONE) && current >= time + 5000) {
+                    loc.getBlock().setType(Material.RED_SANDSTONE);
+                    PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.FLAME, true, (float) (loc.getX() + 0.5), (float) (loc.getY() + 0.8), (float) (loc.getZ() + 0.5), 1.0f, 1.0f, 1.0f, 0, 5);
+                    for (Player all : Bukkit.getOnlinePlayers()) {
+                        ((CraftPlayer) all).getHandle().playerConnection.sendPacket(packet);
+                    }
+                } else if (current >= time + 10000) {
+                    loc.getBlock().setType(Material.AIR);
+                    PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.SMOKE_LARGE, true, (float) (loc.getX() + 0.5), (float) (loc.getY() + 0.5), (float) (loc.getZ() + 0.5), 0.5f, 0.5f, 0.5f, 0, 3);
+                    for (Player all : Bukkit.getOnlinePlayers()) {
+                        ((CraftPlayer) all).getHandle().playerConnection.sendPacket(packet);
+                    }
+                    iterator.remove();
+                }
+            }
+        }, 1L, 1L);
+        for (Player all : Bukkit.getOnlinePlayers()) {
+            userManager.getUser(all).createScoreboard();
+        }
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "§5BuildFFA §7wurde §aerfolgreich §7gestartet.");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "Datenbanken sowie Configs wurde §aerfolgreich §7geladen.");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "Minecraft-Version: §c1.8");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "Plugin-Version: §c1.0.0");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "Autoren: §eLuca & Thorsten");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "Project is pushed on Github");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "§eDeveloped for §b§lHydroSlide.eu");
+        Bukkit.getConsoleSender().sendMessage(this.getPrefix() + "§4§lSourcecode is copyright protected!");
+    }
 
-	//MYSQL POOL
-	@Getter
-	private BasicDataSource sqlPool;
-	//LOBBY DATABASE
-	@Getter
-	private BuildFFADatabase buildFFADatabase;
-
-	//USER MANAGER
-	@Getter
-	private UserManager userManager;
-	
-	//API
-	@Getter
-	private TitleAPI titelapi;
-	
-	//ITEM MANAGER
-	@Getter
-	private ItemManager itemManager;
-	
-	//SCOREBOARD
-	@Getter
-	private Scoreboard scoreboard;
-
-	//LOCATION
-	@Getter
-	@Setter
-	private Location spawnLocation;
-	//KAMPF & TOD HÖHE
-	@Getter
-	@Setter
-	private int fightHeight = 0, deathHeight = 0;
-	
-	//ALLOW BUILD
-	@Getter
-	private List<Player> allowBuild = new ArrayList<>();
-	
-	//BLOCK DESTROY 
-	@Getter
-	private Map<Location, Long> blockDestroy = new HashMap<>();
-
-	@Override
-	public void onEnable() {
-		instance = this;
-		Bukkit.getConsoleSender().sendMessage(getPrefix() + "BuildFFA wurde §aaktiviert§7!");
-		Bukkit.getConsoleSender().sendMessage(getPrefix() + "Author§8: §eCrafter75 & Luca §7| §7Version§8: §a2.0.0");
-		Bukkit.getConsoleSender().sendMessage(getPrefix() + "MySQL wird verbunden...");
-		Bukkit.getConsoleSender().sendMessage(getPrefix() + "Alle Daten wurden §aerfolgreich §7geladen!");
-		try {
-			if(!getDataFolder().exists()) {
-				getDataFolder().mkdir();
-			}
-			File configFile = new File(getDataFolder().getPath(), "config.yml");
-			if(!configFile.exists()) {
-				configFile.createNewFile();
-				YamlConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
-				cfg.set("MySQL.Host", "host");
-				cfg.set("MySQL.Database", "db");
-				cfg.set("MySQL.Password", "pw");
-				cfg.set("MySQL.User", "user");
-				cfg.set("MySQL.Port", 3306);
-				cfg.save(configFile);
-			} else {
-				YamlConfiguration cfg = YamlConfiguration.loadConfiguration(configFile);
-
-				if(cfg.get("Spawn") != null) {
-					this.spawnLocation = LocationUtil.stringToLocation(cfg.getString("Spawn"));
-				}
-				if(cfg.get("FightHeight") != null) {
-					this.fightHeight = cfg.getInt("FightHeight");
-				}
-				if(cfg.get("DeathHeight") != null) {
-					this.deathHeight = cfg.getInt("DeathHeight");
-				}
-
-				try {
-					sqlPool = new BasicDataSource();
-
-					sqlPool.setDriverClassName("com.mysql.jdbc.Driver");
-					sqlPool.setUrl("jdbc:mysql://" + cfg.getString("MySQL.Host") + ":" + cfg.getInt("MySQL.Port") + "/" + cfg.getString("MySQL.Database"));
-					sqlPool.setUsername(cfg.getString("MySQL.User"));
-					sqlPool.setPassword(cfg.getString("MySQL.Password"));
-
-					sqlPool.setMaxIdle(30);
-					sqlPool.setMinIdle(5);
-					sqlPool.setDriverClassLoader(BuildFFA.class.getClassLoader());
-
-					System.out.println("[BuildFFA] MySQL connected!");
-
-					Connection connection = null;
-					try {
-						connection = sqlPool.getConnection();
-
-						PreparedStatement preparedStatement = connection.prepareStatement("CREATE TABLE IF NOT EXISTS BuildFFA (UUID VARCHAR(100), Name VARCHAR(100), Kills INT(100), Deaths INT(100), Coins INT(100), Inventory LONGTEXT, PRIMARY KEY(UUID))");
-						preparedStatement.executeUpdate();
-						preparedStatement.close();
-					} catch(SQLException e) {
-						e.printStackTrace();
-					} finally {
-						try {
-							if(connection != null) {
-								connection.close();
-							}
-						} catch(Exception exc) {
-							exc.printStackTrace();
-						}
-					}
-				} catch(Exception e) {
-					e.printStackTrace();
-				}
-			}
-		} catch(IOException e) {
-			e.printStackTrace();
-		}
-		this.titelapi = new TitleAPI();
-		this.buildFFADatabase = new BuildFFADatabase();
-		this.userManager = new UserManager();
-		this.itemManager = new ItemManager();
-
-		PluginManager pluginManager = Bukkit.getPluginManager();
-		getCommand("build").setExecutor(new Build());
-		getCommand("setup").setExecutor(new Setup());
-		getCommand("inventory").setExecutor(new Inventory());
-		getCommand("ranking").setExecutor(new Ranking());
-		getCommand("stats").setExecutor(new Stats());
-		getCommand("vanish").setExecutor(new Vanish());
-		getCommand("teleport").setExecutor(new Teleport());
-		getCommand("gamemode").setExecutor(new Gamemode());
-		pluginManager.registerEvents(new Vanish(), this);
-
-		this.scoreboard = Bukkit.getScoreboardManager().getNewScoreboard();
-
-		try {
-			for(ClassPath.ClassInfo classInfo : ClassPath.from(getClassLoader()).getTopLevelClasses( "ch.luca.cubeslide.buildffa.listener" ) ) {
-				@SuppressWarnings("rawtypes")
-				Class clazz = Class.forName(classInfo.getName());
-
-				if(Listener.class.isAssignableFrom(clazz)) {
-					pluginManager.registerEvents((Listener) clazz.newInstance(), this);
-				}
-			}
-		} catch(IOException | ClassNotFoundException | IllegalAccessException | InstantiationException e) {
-			e.printStackTrace();
-		}
-		
-		Bukkit.getScheduler().scheduleSyncRepeatingTask(this, () -> {
-			long current = System.currentTimeMillis();
-			
-			Iterator<Entry<Location, Long>> iterator = this.blockDestroy.entrySet().iterator();
-			while(iterator.hasNext()) {
-				Entry<Location, Long> entry = iterator.next();
-				Location loc = entry.getKey();
-				long time = entry.getValue();
-				
-				if(loc.getBlock().getType().equals(Material.SANDSTONE) && current >= time+5000) {
-					loc.getBlock().setType(Material.RED_SANDSTONE);
-					PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.FLAME, true, (float)(loc.getX()+0.5), (float)(loc.getY()+0.8), (float)(loc.getZ()+0.5), 1.0f, 1.0f, 1.0f, 0, 5);
-					for(Player all : Bukkit.getOnlinePlayers()) {
-						((CraftPlayer)all).getHandle().playerConnection.sendPacket(packet);
-					}
-				}  else if(current >= time+10000) {
-					loc.getBlock().setType(Material.AIR);
-					PacketPlayOutWorldParticles packet = new PacketPlayOutWorldParticles(EnumParticle.SMOKE_LARGE, true, (float)(loc.getX()+0.5), (float)(loc.getY()+0.5), (float)(loc.getZ()+0.5), 0.5f, 0.5f, 0.5f, 0, 3);
-					for(Player all : Bukkit.getOnlinePlayers()) {
-						((CraftPlayer)all).getHandle().playerConnection.sendPacket(packet);
-					}
-					iterator.remove();
-				}
-			}
-		}, 1L, 1L);
-		for(Player all : Bukkit.getOnlinePlayers()) {
-			userManager.getUser(all).createScoreboard();
-		}
-	}
-	@Override
-	public void onDisable() {
-		if(sqlPool == null || sqlPool.isClosed()) return;
-		try {
-			sqlPool.close();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-	}
+    @Override
+    public void onDisable() {
+        if (sqlPool == null || sqlPool.isClosed()) return;
+        try {
+            sqlPool.close();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
 }

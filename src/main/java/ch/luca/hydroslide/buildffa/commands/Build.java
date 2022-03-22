@@ -9,40 +9,46 @@ import org.bukkit.entity.Player;
 
 public class Build implements CommandExecutor {
 
+	private BuildFFA buildFFA;
+
+	public Build(BuildFFA buildFFA) {
+		this.buildFFA = buildFFA;
+	}
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!(sender instanceof Player)) {
-			sender.sendMessage(BuildFFA.getNotPlayer());
+			sender.sendMessage(buildFFA.getNoPlayer());
 			return true;
 		}
 		Player p = (Player) sender;
 		
 		if(!p.hasPermission("buildffa.build")) {
-			p.sendMessage(BuildFFA.getNoPerms());
+			p.sendMessage(buildFFA.getNoPermission());
 			return true;
 		}
 		if(args.length == 1) {
 			Player p2 = Bukkit.getPlayer(args[0]);
 			if(p2 == null) {
-				p.sendMessage(BuildFFA.getNotOnline());
+				p.sendMessage(buildFFA.getPlayerNotOnline());
 				return true;
 			}
-			if(BuildFFA.getInstance().getAllowBuild().contains(p2)) {
-				BuildFFA.getInstance().getAllowBuild().remove(p2);
-				p.sendMessage(BuildFFA.getPrefix() + "§e" + p2.getName() + "'s Build-Modus wurde §cdeaktiviert§7.");
+			if(buildFFA.getAllowBuild().contains(p2)) {
+				buildFFA.getAllowBuild().remove(p2);
+				p.sendMessage(buildFFA.getPrefix() + "Der §cBuild-Modus §7von §e" + p2.getName() + " §7wurde §cdeaktiviert§7.");
 				return true;
 			}
-			BuildFFA.getInstance().getAllowBuild().add(p2);
-			p.sendMessage(BuildFFA.getPrefix() + "§e" + p2.getName() + "'s Dein Build-Modus wurde §aaktiviert§7.");
+			buildFFA.getAllowBuild().add(p2);
+			p.sendMessage(buildFFA.getPrefix() + "Der §cBuild-Modus §7von §e" + p2.getName() + " §7wurde §aaktiviert§7.");
 			return true;
 		} else {
-			if(BuildFFA.getInstance().getAllowBuild().contains(p)) {
-				BuildFFA.getInstance().getAllowBuild().remove(p);
-				p.sendMessage(BuildFFA.getPrefix() + "Dein Build-Modus wurde §cdeaktiviert§7.");
+			if(buildFFA.getAllowBuild().contains(p)) {
+				buildFFA.getAllowBuild().remove(p);
+				p.sendMessage(buildFFA.getPrefix() + "Dein §cBuild-Modus §7wurde §cdeaktiviert§7.");
 				return true;
 			}
-			BuildFFA.getInstance().getAllowBuild().add(p);
-			p.sendMessage(BuildFFA.getPrefix() + "Dein Build-Modus wurde §aaktiviert§7.");
+			buildFFA.getAllowBuild().add(p);
+			p.sendMessage(buildFFA.getPrefix() + "Dein §cBuild-Modus §7wurde §aaktiviert§7.");
 			return true;
 		}
 	}

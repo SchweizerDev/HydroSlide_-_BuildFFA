@@ -8,21 +8,27 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 public class Inventory implements CommandExecutor {
+
+	private BuildFFA buildFFA;
+
+	public Inventory(BuildFFA buildFFA) {
+		this.buildFFA = buildFFA;
+	}
 	
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!(sender instanceof Player)) {
-			sender.sendMessage(BuildFFA.getNotPlayer());
+			sender.sendMessage(buildFFA.getNoPlayer());
 			return true;
 		}
 		Player p = (Player) sender;
 
 		if(p.getLocation().getBlockY() < BuildFFA.getInstance().getFightHeight()) {
-			p.sendMessage(BuildFFA.getPrefix() + "§cDu kannst dein Inventar nur am Spawn sortieren.");
+			p.sendMessage(buildFFA.getPrefix() + "§cDu kannst dein Inventar nur am Spawn sortieren.");
 			return true;
 		}
-		User user = BuildFFA.getInstance().getUserManager().getUser(p);
-		p.openInventory(BuildFFA.getInstance().getItemManager().getChangeInventory());
+		User user = buildFFA.getUserManager().getUser(p);
+		p.openInventory(buildFFA.getItemManager().getChangeInventory());
 		user.setInventory();
 		return true;
 	}

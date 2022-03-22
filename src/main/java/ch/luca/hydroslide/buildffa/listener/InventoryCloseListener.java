@@ -17,7 +17,7 @@ public class InventoryCloseListener implements Listener {
 		if(e.getInventory().getTitle().equals("§eInventar Sortierung")) {
 			User user = BuildFFA.getInstance().getUserManager().getUser(p);
 			user.saveInventory();
-			p.sendMessage(BuildFFA.getPrefix() + "Dein Inventar wurde gespeichert.");
+			p.sendMessage(BuildFFA.getInstance().getPrefix() + "Dein Inventar wurde gespeichert.");
 		}
 	}
 

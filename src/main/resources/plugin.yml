@@ -13,9 +13,9 @@ commands:
   gamemode:
     aliases: [gm]
   inventory:
-    aliases: [inv, inventar, sortieren]
+    aliases: [inv, inventar, sortieren, invs]
   ranking:
-    aliases: [top, top10]
+    aliases: [top, top10, ranks]
   stats:
   vanish:
     aliases: [v]

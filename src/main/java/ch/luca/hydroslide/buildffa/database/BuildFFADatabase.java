@@ -111,11 +111,11 @@ public class BuildFFADatabase {
 		try {
 			connection = BuildFFA.getInstance().getSqlPool().getConnection();
 			
-			PreparedStatement preparedStatement = connection.prepareStatement("SELECT UUID FROM BuildFFA ORDER BY Kills DESC");
+			PreparedStatement preparedStatement = connection.prepareStatement("SELECT uuid FROM BuildFFA ORDER BY kills DESC");
 			ResultSet rs = preparedStatement.executeQuery();
 			while((rs.next()) && (!finish)) {
 				rank++;
-				if(rs.getString("UUID").equals(uuid)) {
+				if(rs.getString("uuid").equals(uuid)) {
 					finish = true;
 				}
 			}

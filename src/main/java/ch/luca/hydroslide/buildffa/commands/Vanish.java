@@ -4,7 +4,9 @@ import java.util.ArrayList;
 
 import ch.luca.hydroslide.buildffa.BuildFFA;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.block.Chest;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -22,47 +24,79 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.Inventory;
 
-
 public class Vanish implements CommandExecutor, Listener {
-	
-	public static ArrayList<Player> vanish = new ArrayList<Player>();
-	
+
+	private BuildFFA buildFFA;
+
+	public Vanish(BuildFFA buildFFA) {
+		this.buildFFA = buildFFA;
+	}
+
+	public static ArrayList<Player> vanish = new ArrayList();
+
 	@Override
-	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-		if (!(sender instanceof Player)) {
-			sender.sendMessage(BuildFFA.getNotPlayer());
+	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+		if(!(sender instanceof Player)) {
+			sender.sendMessage(buildFFA.getNoPlayer());
 			return true;
 		}
-		Player p = (Player) sender;
-		if (p.hasPermission("buildffa.vanish")) {
-			if (args.length == 0) {
-				if (vanish.contains(p)) {
-					vanish.remove(p);
-					p.setAllowFlight(false);
-					p.sendMessage(BuildFFA.getPrefix() + "§cDu bist nun nicht mehr im Vanish.");
-					for (Player all : Bukkit.getOnlinePlayers()) {
-						all.showPlayer(p);
-
-					}
-				} else {
-					vanish.add(p);
-					p.setAllowFlight(true);
-					p.sendMessage(BuildFFA.getPrefix() + "Du bist nun im Vanish und kannst fliegen.");
-					for (Player all : Bukkit.getOnlinePlayers()) {
-						if (!all.hasPermission("buildffa.vanish")) {
-							all.hidePlayer(p);
-						}
+		Player p = (Player)sender;
+		if(!p.hasPermission("buildffa.vanish")) {
+			p.sendMessage(buildFFA.getNoPermission());
+			return true;
+		}
+		if(args.length == 0) {
+			if(!vanish.contains(p)) {
+				vanish.add(p);
+				p.setAllowFlight(true);
+				p.playSound(p.getLocation(), Sound.NOTE_PLING, 1, 1);
+				p.sendMessage(buildFFA.getPrefix() + "§aDu bist nun im Vanish.");
+				for(Player o : Bukkit.getOnlinePlayers()) {
+					if(!o.hasPermission("buildffa.vanish")) {
+						o.hidePlayer(p);
 					}
 				}
 			} else {
-				p.sendMessage(BuildFFA.getUse() + "/vanish");
+				vanish.remove(p);
+				if(!p.getGameMode().equals(GameMode.CREATIVE)) {
+					p.setAllowFlight(false);
+				}
+				p.playSound(p.getLocation(), Sound.NOTE_BASS, 1, 1);
+				p.sendMessage(buildFFA.getPrefix()+ "§cDu bist nun nicht mehr im Vanish.");
+				for(Player o : Bukkit.getOnlinePlayers()) {
+					o.showPlayer(p);
+				}
 			}
 		} else {
-			p.sendMessage(BuildFFA.getNoPerms());
+			Player t = Bukkit.getPlayer(args[0]);
+			if(!p.hasPermission("buildffa.vanish.other")) {
+				p.sendMessage(buildFFA.getNoPermission());
+				return true;
+			}
+			if(!vanish.contains(t)) {
+				vanish.add(t);
+				t.setAllowFlight(true);
+				t.playSound(t.getLocation(), Sound.NOTE_PLING, 2, 2);
+				t.sendMessage(buildFFA.getPrefix()+ "§aDu bist num im Vanish.");
+				p.sendMessage(buildFFA.getPrefix()+ "Der Spieler §e" + t.getName() + " §7ist nun im Vanish.");
+				for(Player o : Bukkit.getOnlinePlayers()) {
+					if(!o.hasPermission("buildffa.vanish")) {
+						o.hidePlayer(t);
+					}
+				}
+			} else {
+				vanish.remove(p);
+				p.setAllowFlight(false);
+				t.playSound(t.getLocation(), Sound.NOTE_BASS, 2, 2);
+				t.sendMessage(buildFFA.getPrefix() + "§cDu bist nun nicht mehr im Vanish.");
+				p.sendMessage(buildFFA.getPrefix() + "Der Spieler §e" + t.getName() + " §7ist nun nicht mehr im Vanish.");
+				for(Player o : Bukkit.getOnlinePlayers()) {
+					o.showPlayer(p);
+				}
+			}
 		}
-		return false;
+		return true;
 	}
-
 
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
@@ -87,9 +121,9 @@ public class Vanish implements CommandExecutor, Listener {
 	public void onVanish(EntityDamageByEntityEvent e) {
 		Entity p = e.getEntity();
 		Entity pd = e.getDamager();
-		if(((p instanceof Player)) && ((pd instanceof Player)) && (vanish.contains(pd)) && (!pd.hasPermission("buildffa.vanish.hitother"))) {
+		if(((p instanceof Player)) && ((pd instanceof Player)) && (vanish.contains(pd)) && (!pd.hasPermission("buildffa.vanish.allow"))) {
 			e.setCancelled(true);
-			pd.sendMessage(BuildFFA.getPrefix() + "§cDu kannst im Vanish niemand schlagen!");
+			pd.sendMessage(buildFFA.getPrefix() + "§cDu kannst im Vanish niemanden schlagen.");
 		}
 	}
 
@@ -99,18 +133,18 @@ public class Vanish implements CommandExecutor, Listener {
 				(e.getAction() == Action.RIGHT_CLICK_BLOCK)) {
 			e.setCancelled(true);
 			Chest chest = (Chest)e.getClickedBlock().getState();
-			Inventory chestview = Bukkit.createInventory(e.getPlayer(), chest.getInventory().getSize(), "§8=-= §eVanish Chest §8=-=");
-			chestview.setContents(chest.getInventory().getContents());
-			e.getPlayer().openInventory(chestview);
+			Inventory chestView = Bukkit.createInventory(e.getPlayer(), chest.getInventory().getSize(), "§8=-= §eVanish Chest §8=-=");
+			chestView.setContents(chest.getInventory().getContents());
+			e.getPlayer().openInventory(chestView);
 		}
 	}
 
 	@EventHandler
 	public void onVanishChest(InventoryClickEvent e) {
 		Player p = (Player)e.getWhoClicked();
-		if(e.getInventory().getTitle().equals("§8=-= §eVanish Chest §8=-=")) {
+		if(e.getView().getTitle().equals("§8=-= §eVanish Chest §8=-=")) {
 			e.setCancelled(true);
-			p.sendMessage(BuildFFA.getPrefix() + "§cDu kannst im Vanish nicht editieren!");
+			p.sendMessage(buildFFA.getPrefix() + "§cDu kannst im Vanish nicht editieren.");
 		}
 	}
 }

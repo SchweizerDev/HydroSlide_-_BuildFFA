@@ -17,8 +17,8 @@ public class PlayerJoinListener implements Listener {
 	public void onJoin(PlayerJoinEvent e) {
 		Player p = e.getPlayer();
 		e.setJoinMessage(null);
-		p.sendMessage(BuildFFA.getPrefix() + "Benutze §e/inv §7um dein Inventar anzupassen.");
-		p.sendMessage(BuildFFA.getPrefix() + "§6Teaming §cist verboten und wird bestraft!");
+		p.sendMessage(BuildFFA.getInstance().getPrefix() + "Benutze §e/inv §7um deine Inventarsortierung anzupassen.");
+		p.sendMessage(BuildFFA.getInstance().getPrefix() + "§cDas §eTeamen §7mit anderen Spielern ist verboten und wird bestraft.");
 		User user = BuildFFA.getInstance().getUserManager().getUser(p);
 		Location loc = BuildFFA.getInstance().getSpawnLocation();
 		p.teleport(loc != null ? loc : Bukkit.getWorlds().get(0).getSpawnLocation());

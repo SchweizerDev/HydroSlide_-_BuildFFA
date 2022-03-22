@@ -9,7 +9,7 @@ import ch.luca.hydroslide.buildffa.item.ItemManager;
 import ch.luca.hydroslide.buildffa.util.Util;
 import ch.luca.hydroslide.buildffa.util.InventoryUtil;
 import ch.luca.hydroslide.buildffa.util.PacketScoreboard;
-import ch.luca.cubeslide.coinsapi.CoinsAPI;
+import ch.luca.hydroslide.coinsapi.CoinsAPI;
 import de.crafter75.perms.bukkit.api.BukkitRankAPI;
 import de.crafter75.perms.global.rank.Rank;
 import lombok.Getter;
@@ -45,23 +45,23 @@ public class User {
 	public User(Player p) {
 		this.player = p;
 		
-		BuildFFA.getInstance().getBuildFFADatabase().executeQuery("SELECT * FROM BuildFFA WHERE UUID='" + p.getUniqueId().toString() + "'", true, new Consumer<ResultSet>() {
+		BuildFFA.getInstance().getBuildFFADatabase().executeQuery("SELECT * FROM BuildFFA WHERE uuid='" + p.getUniqueId().toString() + "'", true, new Consumer<ResultSet>() {
 			
 			@Override
 			public void accept(ResultSet rs) {
 				if(rs == null) return;
 				try {
 					if(rs.next()) {
-						kills = rs.getInt("Kills");
-						deaths = rs.getInt("Deaths");
-						coins = rs.getInt("Coins");
+						kills = rs.getInt("kills");
+						deaths = rs.getInt("deaths");
+						coins = rs.getInt("amount");
 						
-						inventorySort = InventoryUtil.fromBase64(rs.getString("Inventory"));
+						inventorySort = InventoryUtil.fromBase64(rs.getString("inventory"));
 						
 						createScoreboard();
 						setInventory();
 						
-						BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET Name='" + p.getName() + "' WHERE UUID='" + p.getUniqueId().toString() + "'", false);
+						BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET name='" + p.getName() + "' WHERE uuid='" + p.getUniqueId().toString() + "'", false);
 					} else {
 						kills = 0;
 						deaths = 0;
@@ -85,34 +85,32 @@ public class User {
 			this.player.teleport(BuildFFA.getInstance().getSpawnLocation());
 			this.deaths++;
 			this.player.playSound(this.player.getLocation(), Sound.ENDERMAN_DEATH, 1F, 1F);
-			CoinsAPI.getInstance().getCoinsRepository().hasCoins(player.getUniqueId(), 2, coins -> {
+			CoinsAPI.getInstance().getCoinsRepository().hasCoins(player.getUniqueId(), 5, coins -> {
 				if(!coins) {
-					player.sendMessage(BuildFFA.getPrefix() + "Da du zu wenig Coins hast, wurden dir keine abgezogen.");
+					player.sendMessage(BuildFFA.getInstance().getPrefix() + "Du hast weniger als §65 Coins§7. Deshalb werden dir keine abgezogen.");
 					return;
 				}
 				CoinsAPI.getInstance().getCoinsRepository().removeCoins(player.getUniqueId(), 2);
 			});
-
 			this.scoreboard.setLine(1, "  §b➼ §c" + this.deaths);
 			this.scoreboard.setLine(7, "  §b➼ §6" + Util.asString(CoinsAPI.getInstance().getCoinsRepository().getCoins(player.getUniqueId())));
 			if(this.damage != null) {
 				Player d = this.damage;
 				this.damage = null;
-				
 				if(d != null) {
-					this.player.sendMessage(BuildFFA.getPrefix() + "Du wurdest von §e" + d.getDisplayName() + " §cgetötet§7!");
-					this.player.sendMessage(BuildFFA.getPrefix() + "§c- §62 §7Coins");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "Du wurdest von §c" + d.getName() + " §7getötet!");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 					BuildFFA.getInstance().getUserManager().getUser(d).kill(this.player);
 				} else {
-					this.player.sendMessage(BuildFFA.getPrefix() + "Du bist §cgestorben§7!");
-					this.player.sendMessage(BuildFFA.getPrefix() + "§c- §62 §7Coins");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§cDu bist gestorben.");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 				}
 			} else {
-				this.player.sendMessage(BuildFFA.getPrefix() + "Du bist §cgestorben§7!");
-				this.player.sendMessage(BuildFFA.getPrefix() + "§c- §62 §7Coins");
+				this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§cDu bist gestorben.");
+				this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 			}
 			setInventory();
-			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET Deaths=" + this.deaths + ", Coins=" + this.coins + " WHERE UUID='" + this.player.getUniqueId().toString() + "'", true);
+			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET deaths=" + this.deaths + ", amount=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 			return;
 		}
 		Bukkit.getScheduler().runTaskLater(BuildFFA.getInstance(), () -> {
@@ -121,7 +119,7 @@ public class User {
 			this.player.playSound(this.player.getLocation(), Sound.ENDERMAN_DEATH, 1F, 1F);
 			CoinsAPI.getInstance().getCoinsRepository().hasCoins(player.getUniqueId(), 2, coins -> {
 				if(!coins) {
-					player.sendMessage(BuildFFA.getPrefix() + "Da du zu wenig Coins hast, wurden dir keine abgezogen.");
+					player.sendMessage(BuildFFA.getInstance().getPrefix() + "Du hast weniger als §65 Coins§7. Deshalb werden dir keine abgezogen.");
 					return;
 				}
 				CoinsAPI.getInstance().getCoinsRepository().removeCoins(player.getUniqueId(), 2);
@@ -131,21 +129,20 @@ public class User {
 			if(this.damage != null) {
 				Player d = this.damage;
 				this.damage = null;
-				
 				if(d != null) {
-					this.player.sendMessage(BuildFFA.getPrefix() + "Du wurdest von §e" + d.getDisplayName() + " §cgetötet§7!");
-					this.player.sendMessage(BuildFFA.getPrefix() + "§c- §62 §7Coins");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "Du wurdest von §c" + d.getDisplayName() + " §7getötet!");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 					BuildFFA.getInstance().getUserManager().getUser(d).kill(this.player);
 				} else {
-					this.player.sendMessage(BuildFFA.getPrefix() + "Du bist §cgestorben§7!");
-					this.player.sendMessage(BuildFFA.getPrefix() + "§c- §62 §7Coins");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§cDu bist gestorben.");
+					this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 				}
 			} else {
-				this.player.sendMessage(BuildFFA.getPrefix() + "Du bist §cgestorben§7!");
-				this.player.sendMessage(BuildFFA.getPrefix() + "§c- §62 §7Coins");
+				this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§cDu bist gestorben.");
+				this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 			}
 			setInventory();
-			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET Deaths=" + this.deaths + ", Coins=" + this.coins + " WHERE UUID='" + this.player.getUniqueId().toString() + "'", true);
+			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET deaths=" + this.deaths + ", amount=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 		}, 2L);
 	}
 	public void kill(Player p) {
@@ -154,16 +151,16 @@ public class User {
 		this.kills++;
 		if(player.hasPermission("buildffa.doublecoins")) {
 			CoinsAPI.getInstance().getCoinsRepository().addCoins(player.getUniqueId(), 10);
-			this.player.sendMessage(BuildFFA.getPrefix() + "Du hast §e" + p.getDisplayName() + " §cgetötet§7!");
-			this.player.sendMessage(BuildFFA.getPrefix() + "§a+ §65 §7Coins §8(§a+ §65 §7Coinbonus§8)");
+			this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "Du hast §e" + p.getDisplayName() + " §7getötet.");
+			this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§a+ §65 Coins §8(§a+ §65 §7Coinbonus§8)");
 		} else {
 			CoinsAPI.getInstance().getCoinsRepository().addCoins(player.getUniqueId(), 5);
-			this.player.sendMessage(BuildFFA.getPrefix() + "Du hast §e" + p.getDisplayName() + " §cgetötet§7!");
-			this.player.sendMessage(BuildFFA.getPrefix() + "§a+ §65 §7Coins");
+			this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "Du hast §e" + p.getDisplayName() + " §7getötet.");
+			this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§a+ §65 Coins");
 		}
 		this.scoreboard.setLine(4, "  §b➼ §a" + this.kills);
 		this.scoreboard.setLine(7, "  §b➼ §6" + Util.asString(CoinsAPI.getInstance().getCoinsRepository().getCoins(player.getUniqueId())));
-		BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET Kills=" + this.kills + ", Coins=" + this.coins + " WHERE UUID='" + this.player.getUniqueId().toString() + "'", true);
+		BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET kills=" + this.kills + ", amount=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 	}
 	public void setInventory() {
 		PlayerInventory inv = this.player.getInventory();
@@ -178,7 +175,7 @@ public class User {
 	}
 	public void saveInventory() {
 		this.inventorySort = this.player.getInventory().getContents();
-		BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET Inventory='" + InventoryUtil.toBase64(this.inventorySort) + "' WHERE UUID='" + this.player.getUniqueId().toString() + "'", true);
+		BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET inventory='" + InventoryUtil.toBase64(this.inventorySort) + "' WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 	}
 	public void createScoreboard() {
 		if(this.scoreboard != null) {
@@ -192,7 +189,7 @@ public class User {
 			 rankName = rank.getRankName();
 		}
 		this.scoreboard = new PacketScoreboard(this.player);
-		this.scoreboard.sendSidebar("§3§lCube§bSlide §a✧ §7BuildFFA");
+		this.scoreboard.sendSidebar("§bHydroSlide §a✧ §5BuildFFA");
 		this.scoreboard.setLine(1, "  §b➼ §c" + this.deaths);
 		this.scoreboard.setLine(2, "§a✧ §7Deine Tode");
 		this.scoreboard.setLine(3, "§d");

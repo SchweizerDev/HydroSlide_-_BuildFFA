@@ -10,68 +10,62 @@ import org.bukkit.entity.Player;
 
 public class Gamemode implements CommandExecutor {
 
+    private BuildFFA buildFFA;
+
+    public Gamemode(BuildFFA buildFFA) {
+        this.buildFFA = buildFFA;
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (!(sender instanceof Player)) {
-            sender.sendMessage(BuildFFA.getNotPlayer());
+        if(!(sender instanceof Player)) {
+            sender.sendMessage(buildFFA.getNoPlayer());
             return true;
         }
-        Player p = (Player) sender;
-        if (p.hasPermission("buildffa.gamemode")) {
-            if (args.length == 1) {
-                if (args[0].equalsIgnoreCase("0")) {
-                    p.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eSurvivial§7.");
-                    p.setGameMode(GameMode.SURVIVAL);
-                } else if (args[0].equalsIgnoreCase("1")) {
-                    p.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eCreative§7.");
-                    p.setGameMode(GameMode.CREATIVE);
-                } else if (args[0].equalsIgnoreCase("2")) {
-                    p.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eAdventure§7.");
-                    p.setGameMode(GameMode.ADVENTURE);
-                } else if (args[0].equalsIgnoreCase("3")) {
-                    p.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eSpectator§7.");
-                    p.setGameMode(GameMode.SPECTATOR);
-                    p.setAllowFlight(true);
-                    p.setFlying(true);
-                } else {
-                    p.sendMessage(BuildFFA.getUse() + "/gm <0/1/2/3> <Spieler>");
-                }
-            } else if (args.length == 2) {
-                Player t = Bukkit.getPlayer(args[1]);
-                if (p.hasPermission("buildffa.gamemode.other")) {
-                    if (t == null) {
-                        p.sendMessage(BuildFFA.getNotOnline());
-                        return true;
-                    }
-                    if (args[0].equalsIgnoreCase("0")) {
-                        t.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eSurvival§7.");
-                        t.setGameMode(GameMode.SURVIVAL);
-                        p.sendMessage(BuildFFA.getPrefix() + "Der Spieler §a" + t.getName() + " §7ist nun im §eSurvival§7.");
-                    } else if (args[0].equalsIgnoreCase("1")) {
-                        t.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eCreative§7.");
-                        t.setGameMode(GameMode.CREATIVE);
-                        p.sendMessage(BuildFFA.getPrefix() + "Der Spieler §a" + t.getName() + " §7ist nun im §eCreative§7.");
-                    } else if (args[0].equalsIgnoreCase("2")) {
-                        t.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eAdventure§7.");
-                        t.setGameMode(GameMode.ADVENTURE);
-                        p.sendMessage(BuildFFA.getPrefix() + "Der Spieler §a" + t.getName() + " §7ist nun im §eAdventure§7.");
-                    } else if (args[0].equalsIgnoreCase("3")) {
-                        t.sendMessage(BuildFFA.getPrefix() + "Du bist nun im §eSpectator§7.");
-                        t.setGameMode(GameMode.SPECTATOR);
-                        p.sendMessage(BuildFFA.getPrefix() + "Der Spieler §a" + t.getName() + " §7ist nun im §eSpectator§7.");
-                        t.setAllowFlight(true);
-                        t.setFlying(true);
-                    } else {
-                        p.sendMessage(BuildFFA.getUse() + "/gm <0/1/2/3> <Spieler>");
-                    }
-                } else {
-                    p.sendMessage(BuildFFA.getNoPerms());
-                }
-            } else {
-                p.sendMessage(BuildFFA.getUse() + "/gm <0/1/2/3> <Spieler>");
+        Player p = (Player)sender;
+        if(!p.hasPermission("buildffa.gamemode")) {
+            p.sendMessage(buildFFA.getNoPermission());
+            return true;
+        }
+        if(args.length == 1) {
+            if(args[0].equalsIgnoreCase("0")) {
+                p.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Überlebensmodus§7.");
+                p.setGameMode(GameMode.SURVIVAL);
+            } else if(args[0].equalsIgnoreCase("1")) {
+                p.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Kreativmodus§7.");
+                p.setGameMode(GameMode.CREATIVE);
+            } else if(args[0].equalsIgnoreCase("2")) {
+                p.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Erkundungsmodus§7.");
+                p.setGameMode(GameMode.ADVENTURE);
+            } else if(args[0].equalsIgnoreCase("3")) {
+                p.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Zuschauermodus§7.");
+                p.setGameMode(GameMode.SPECTATOR);
+            }
+        } else if(args.length == 2) {
+            Player target = Bukkit.getPlayer(args[1]);
+            if(target == null) {
+                p.sendMessage(buildFFA.getPlayerNotOnline());
+                return true;
+            }
+            if(args[0].equalsIgnoreCase("0")) {
+                p.sendMessage(buildFFA.getPrefix() + "§b" + target.getName() + " §7ist nun im §3Überlebensmodus§7.");
+                target.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Überlebensmodus§7.");
+                target.setGameMode(GameMode.SURVIVAL);
+            } else if(args[0].equalsIgnoreCase("1")) {
+                p.sendMessage(buildFFA.getPrefix() + "§b" + target.getName() + " §7ist nun im §3Kreativmodus§7.");
+                target.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Kreativmodus§7.");
+                target.setGameMode(GameMode.CREATIVE);
+            } else if(args[0].equalsIgnoreCase("2")) {
+                p.sendMessage(buildFFA.getPrefix() + "§b" + target.getName() + " §7ist nun im §3Erkundungsmodus§7.");
+                target.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Erkundungsmodus§7.");
+                target.setGameMode(GameMode.ADVENTURE);
+            } else if(args[0].equalsIgnoreCase("3")) {
+                p.sendMessage(buildFFA.getPrefix() + "§b" + target.getName() + " §7ist nun im §3Zuschauermodus§7.");
+                target.sendMessage(buildFFA.getPrefix() + "Du bist nun im §3Zuschauermodus§7.");
+                target.setGameMode(GameMode.SPECTATOR);
             }
         } else {
-            p.sendMessage(BuildFFA.getNoPerms());
+            p.sendMessage(buildFFA.getPrefixUse() + "gamemode <0|1|2|3> [Spieler]");
         }
         return false;
     }

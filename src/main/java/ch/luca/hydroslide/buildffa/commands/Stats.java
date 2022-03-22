@@ -1,12 +1,9 @@
 package ch.luca.hydroslide.buildffa.commands;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.function.Consumer;
-
 import ch.luca.hydroslide.buildffa.BuildFFA;
 import ch.luca.hydroslide.buildffa.user.User;
-import ch.luca.cubeslide.coinsapi.CoinsAPI;
+import ch.luca.hydroslide.coinsapi.CoinsAPI;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -15,79 +12,68 @@ import org.bukkit.entity.Player;
 
 public class Stats implements CommandExecutor {
 
+	private BuildFFA buildFFA;
+
+	public Stats(BuildFFA buildFFA) {
+		this.buildFFA = buildFFA;
+	}
+
 	@Override
 	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
 		if(!(sender instanceof Player)) {
-			sender.sendMessage(BuildFFA.getNotPlayer());
+			sender.sendMessage(buildFFA.getNoPlayer());
 			return true;
 		}
 		Player p = (Player) sender;
-
 		if(!BuildFFA.getInstance().getUserManager().getUser(p).checkDelay()) {
-			p.sendMessage(BuildFFA.getPrefix() + "§cBitte warte kurz...");
+			p.sendMessage(buildFFA.getPrefix() + "§cBitte warte kurz...");
 			return true;
 		}
 		if(args.length == 1) {
 			Player p2 = Bukkit.getPlayer(args[0]);
 			if(p2 == null) {
-				BuildFFA.getInstance().getBuildFFADatabase().executeQuery("SELECT * FROM BuildFFA WHERE Name='" + args[0] + "'", true, new Consumer<ResultSet>() {
-
-					@Override
-					public void accept(ResultSet rs) {
-						if(rs == null) return;
-						try {
-							if(rs.next()) {
-								p.sendMessage(BuildFFA.getHeader());
-								int rank = BuildFFA.getInstance().getBuildFFADatabase().getRank(rs.getString("UUID"));
-								p.sendMessage(BuildFFA.getPrefix() + "§7Name §8➼ §e" + rs.getString("Name"));
-								p.sendMessage(BuildFFA.getPrefix() + "§7Coins §8➼ §6" + CoinsAPI.getInstance().getCoinsRepository().getCoins(p.getUniqueId()));
-								p.sendMessage(BuildFFA.getPrefix());
-								p.sendMessage(BuildFFA.getPrefix() + "§7Kills §8➼ §a" + rs.getInt("Kills"));
-								p.sendMessage(BuildFFA.getPrefix() + "§7Tode §8➼ §c" + rs.getInt("Deaths"));
-								p.sendMessage(BuildFFA.getPrefix() + "§7K/D §8➼ §5" + getKd(rs.getInt("Kills"), rs.getInt("Deaths")));
-								p.sendMessage(BuildFFA.getPrefix());
-								p.sendMessage(BuildFFA.getPrefix() + "§7Platz §8➼ §4" + rank);
-								p.sendMessage(BuildFFA.getFooter());
-								return;
-							}
-						} catch (SQLException e) {
-							e.printStackTrace();
+				BuildFFA.getInstance().getBuildFFADatabase().executeQuery("SELECT * FROM BuildFFA WHERE name='" + args[0] + "'", true, rs -> {
+					if(rs == null) return;
+					try {
+						if(rs.next()) {
+							int rank = BuildFFA.getInstance().getBuildFFADatabase().getRank(rs.getString("UUID"));
+							p.sendMessage(buildFFA.getPrefix() + "Name §b➼ §e" + rs.getString("name"));
+							p.sendMessage(buildFFA.getPrefix() + "Coins §b➼ §6" + CoinsAPI.getInstance().getCoinsRepository().getCoins(p.getUniqueId()));
+							p.sendMessage(buildFFA.getPrefix() + "Kills §b➼ §a" + rs.getInt("kills"));
+							p.sendMessage(buildFFA.getPrefix() + "Tode §b➼ §c" + rs.getInt("deaths"));
+							p.sendMessage(buildFFA.getPrefix() + "K/D §b➼ §a" + getKd(rs.getInt("kills"), rs.getInt("deaths")));
+							p.sendMessage(buildFFA.getPrefix() + "Rang im Ranking §b➼ §a" + rank);
+							return;
 						}
-						p.sendMessage(BuildFFA.getNeverOnline());
-						return;
+					} catch (SQLException e) {
+						e.printStackTrace();
 					}
+					p.sendMessage(buildFFA.getPlayerNeverOnline());
+					return;
 				});
 				return true;
 			}
 			User user = BuildFFA.getInstance().getUserManager().getUser(p2);
 			Bukkit.getScheduler().runTaskAsynchronously(BuildFFA.getInstance(), () -> {
-				p.sendMessage(BuildFFA.getHeader());
 				int rank = BuildFFA.getInstance().getBuildFFADatabase().getRank(p2.getUniqueId().toString());
-				p.sendMessage(BuildFFA.getPrefix() + "§7Name §8➼ §e" + p2.getName());
-				p.sendMessage(BuildFFA.getPrefix() + "§7Coins §8➼ §6" + CoinsAPI.getInstance().getCoinsRepository().getCoins(p2.getUniqueId()));
-				p.sendMessage(BuildFFA.getPrefix());
-				p.sendMessage(BuildFFA.getPrefix() + "§7Kills §8➼ §a" + user.getKills());
-				p.sendMessage(BuildFFA.getPrefix() + "§7Tode §8➼ §c" + user.getDeaths());
-				p.sendMessage(BuildFFA.getPrefix() + "§7K/D §8➼ §5" + getKd(user.getKills(), user.getDeaths()));
-				p.sendMessage(BuildFFA.getPrefix());
-				p.sendMessage(BuildFFA.getPrefix() + "§7Platz §8➼ §4" + rank);
-				p.sendMessage(BuildFFA.getFooter());
+				p.sendMessage(buildFFA.getPrefix() + "Name §b➼ §e" + p2.getName());
+				p.sendMessage(buildFFA.getPrefix() + "Coins §b➼ §6" + CoinsAPI.getInstance().getCoinsRepository().getCoins(p2.getUniqueId()));
+				p.sendMessage(buildFFA.getPrefix() + "Kills §b➼ §a" + user.getKills());
+				p.sendMessage(buildFFA.getPrefix() + "Tode §b➼ §c" + user.getDeaths());
+				p.sendMessage(buildFFA.getPrefix() + "K/D §b➼ §a" + getKd(user.getKills(), user.getDeaths()));
+				p.sendMessage(buildFFA.getPrefix() + "Rang im Ranking §b➼ §a" + rank);
 			});
 			return true;
 		} 
 		User user = BuildFFA.getInstance().getUserManager().getUser(p);
 		Bukkit.getScheduler().runTaskAsynchronously(BuildFFA.getInstance(), () -> {
-			p.sendMessage(BuildFFA.getHeader());
 			int rank = BuildFFA.getInstance().getBuildFFADatabase().getRank(p.getUniqueId().toString());
-			p.sendMessage(BuildFFA.getPrefix() + "§7Name §8➼ §e" + p.getName());
-			p.sendMessage(BuildFFA.getPrefix() + "§7Coins §8➼ §6" + CoinsAPI.getInstance().getCoinsRepository().getCoins(p.getUniqueId()));
-			p.sendMessage(BuildFFA.getPrefix());
-			p.sendMessage(BuildFFA.getPrefix() + "§7Kills §8➼ §a" + user.getKills());
-			p.sendMessage(BuildFFA.getPrefix() + "§7Tode §8➼ §c" + user.getDeaths());
-			p.sendMessage(BuildFFA.getPrefix() + "§7K/D §8➼ §5" + getKd(user.getKills(), user.getDeaths()));
-			p.sendMessage(BuildFFA.getPrefix());
-			p.sendMessage(BuildFFA.getPrefix() + "§7Platz §8➼ §4" + rank);
-			p.sendMessage(BuildFFA.getFooter());
+			p.sendMessage(buildFFA.getPrefix() + "Name §b➼ §e" + p.getName());
+			p.sendMessage(buildFFA.getPrefix() + "Coins §b➼ §6" + CoinsAPI.getInstance().getCoinsRepository().getCoins(p.getUniqueId()));
+			p.sendMessage(buildFFA.getPrefix() + "Kills §b➼ §a" + user.getKills());
+			p.sendMessage(buildFFA.getPrefix() + "Tode §b➼ §c" + user.getDeaths());
+			p.sendMessage(buildFFA.getPrefix() + "K/D §b➼ §a" + getKd(user.getKills(), user.getDeaths()));
+			p.sendMessage(buildFFA.getPrefix() + "Rang im Ranking §b➼ §a" + rank);
 		});
 		return true;
 	}
