@@ -1,0 +1,25 @@
+name: BuildFFA
+authors: [Thorsten, Luca]
+version: 1.0.0
+main: ch.luca.hydroslide.buildffa.BuildFFA
+depend:
+  - CoinsAPI
+  - CubePerms
+  - CubeNick
+  - ProtocolLib
+commands:
+  build:
+  setup:
+  gamemode:
+    aliases: [gm]
+  inventory:
+    aliases: [inv, inventar, sortieren]
+  ranking:
+    aliases: [top, top10]
+  stats:
+  vanish:
+    aliases: [v]
+  teleport:
+    aliases: [tp]
+
+
