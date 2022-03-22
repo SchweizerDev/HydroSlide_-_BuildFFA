@@ -54,7 +54,7 @@ public class User {
 					if(rs.next()) {
 						kills = rs.getInt("kills");
 						deaths = rs.getInt("deaths");
-						coins = rs.getInt("amount");
+						coins = rs.getInt("coins");
 						
 						inventorySort = InventoryUtil.fromBase64(rs.getString("inventory"));
 						
@@ -110,7 +110,7 @@ public class User {
 				this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 			}
 			setInventory();
-			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET deaths=" + this.deaths + ", amount=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
+			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET deaths=" + this.deaths + ", coins=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 			return;
 		}
 		Bukkit.getScheduler().runTaskLater(BuildFFA.getInstance(), () -> {
@@ -142,7 +142,7 @@ public class User {
 				this.player.sendMessage(BuildFFA.getInstance().getPrefix() + "§c- §62 Coins");
 			}
 			setInventory();
-			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET deaths=" + this.deaths + ", amount=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
+			BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET deaths=" + this.deaths + ", coins=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 		}, 2L);
 	}
 	public void kill(Player p) {
@@ -160,7 +160,7 @@ public class User {
 		}
 		this.scoreboard.setLine(4, "  §b➼ §a" + this.kills);
 		this.scoreboard.setLine(7, "  §b➼ §6" + Util.asString(CoinsAPI.getInstance().getCoinsRepository().getCoins(player.getUniqueId())));
-		BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET kills=" + this.kills + ", amount=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
+		BuildFFA.getInstance().getBuildFFADatabase().update("UPDATE BuildFFA SET kills=" + this.kills + ", coins=" + this.coins + " WHERE uuid='" + this.player.getUniqueId().toString() + "'", true);
 	}
 	public void setInventory() {
 		PlayerInventory inv = this.player.getInventory();
